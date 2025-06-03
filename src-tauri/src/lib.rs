@@ -17,33 +17,34 @@ struct AssetEntry {
 }
 
 fn extract_from_index(outpath : String, index: String) -> io::Result<()> {
+    // A lot of assumtions about the folder structure, but its probably fine.
     let index_file_path = PathBuf::from(index);
     let assets_dir = index_file_path.parent().unwrap().to_path_buf().parent().unwrap().to_path_buf();
     let name = index_file_path.file_stem().unwrap().to_str().unwrap();
     let directory_name = format!("{}_assets", name);
-    let output_dir = PathBuf::from(outpath).join(directory_name);
+    let output_directiory = PathBuf::from(outpath).join(directory_name);
 
-    if !output_dir.exists() {
-        fs::create_dir_all(&output_dir)?;
+    if !output_directiory.exists() {
+        fs::create_dir_all(&output_directiory)?;
     }
 
-    let objects_dir = assets_dir.join("objects");
+    let objects_directory = assets_dir.join("objects");
 
-    fs::create_dir_all(&output_dir)?;
+    fs::create_dir_all(&output_directiory)?;
 
-    let index_content = fs::read_to_string(index_file_path)?;
-    let asset_index: AssetIndex = serde_json::from_str(&index_content).expect("Invalid JSON");
+    let index_file_content = fs::read_to_string(index_file_path)?;
+    let asset_index: AssetIndex = serde_json::from_str(&index_file_content).expect("Invalid JSON");
 
+    // Extraction logic basically 
+    // Based on https://minecraft.wiki/w/Tutorial:Sound_directory
     for (file_path, entry) in asset_index.objects {
         let hash = entry.hash;
         let subdir = &hash[..2];
-        let source_path = objects_dir.join(subdir).join(&hash);
-        let dest_path = output_dir.join(&file_path);
-        let dest_dir = dest_path.parent().unwrap();
-
-        fs::create_dir_all(dest_dir)?;
-        fs::copy(&source_path, &dest_path)?;
-
+        let source_path = objects_directory.join(subdir).join(&hash);
+        let destination_path = output_directiory.join(&file_path);
+        let destination_dir = destination_path.parent().unwrap();
+        fs::create_dir_all(destination_dir)?;
+        fs::copy(&source_path, &destination_path)?;
         println!("Extracted: {}", file_path);
     }
 
